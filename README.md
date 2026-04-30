@@ -9,6 +9,8 @@ A Gomoku AI project using Minimax and Alpha-Beta pruning for Data Structures and
 启发式策略的权衡：设计一套精细的棋型评估模型（Heuristic Evaluation），模拟人类“进攻为主”或“防守稳健”的博弈心理，通过加权参数调整 AI 的对阵风格。
 软件工程实践：从零构建 GUI 交互界面，实践代码的模块化设计。尽管最终为运行便捷进行了文件合并，但代码逻辑严格遵循界面渲染与算法逻辑解耦的原则。
 
+通过本项目，我不仅深化了对 Minimax 搜索框架的理解，更在处理局部化搜索优化（Search Range Optimization）的过程中，深刻体会到了“启发式搜索”在解决复杂决策问题中的威力。
+
 ## 2. 目录结构说明
 GomokuAI/
 ├── docs/                # 项目文档（包含开发报告、运行截图）
