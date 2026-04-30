@@ -3,33 +3,35 @@ import numpy as np
 import sys
 import math
 
-# --- 棋盘配置参数 ---
-SIZE = 15               # 棋盘大小 15x15
-GRID_SIZE = 40          # 格子大小
-MARGIN = 40             # 边距
+# ================================================= =
+# 配置参数：控制棋盘外观与基础设定
+# ================================================= =
+SIZE = 15               # 棋盘规格 (标准五子棋为 15x15)
+GRID_SIZE = 40          # 绘图时每个方格的像素宽度
+MARGIN = 40             # 棋盘边缘留白
 WINDOW_SIZE = GRID_SIZE * (SIZE - 1) + MARGIN * 2
 
-# 颜色定义
-BOARD_COLOR = (235, 184, 123)  # 经典木质棋盘色
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
+# 颜色常量 (RGB 格式)
+BOARD_COLOR = (235, 184, 123)  # 经典的木质棋盘底色
+BLACK = (0, 0, 0)              # 玩家棋子颜色
+WHITE = (255, 255, 255)        # AI 棋子颜色
 
 class Gomoku:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
         pygame.display.set_caption("Gomoku AI - Alpha-Beta Pruning")
-        self.board = np.zeros((SIZE, SIZE), dtype=int)  # 0:空, 1:玩家(黑), 2:AI(白)
+        # 初始化棋盘矩阵：0-空位, 1-玩家(黑), 2-AI(白)
+        self.board = np.zeros((SIZE, SIZE), dtype=int)  
         self.game_over = False
         self.winner = None
 
     def draw_board(self):
-        """绘制棋盘与棋子"""
+        """渲染棋盘网格与所有已落下的棋子"""
         self.screen.fill(BOARD_COLOR)
         for i in range(SIZE):
-            # 画横线
+            # 绘制水平线与垂直线
             pygame.draw.line(self.screen, BLACK, (MARGIN, MARGIN + i * GRID_SIZE), (WINDOW_SIZE - MARGIN, MARGIN + i * GRID_SIZE), 1)
-            # 画纵线
             pygame.draw.line(self.screen, BLACK, (MARGIN + i * GRID_SIZE, MARGIN), (MARGIN + i * GRID_SIZE, WINDOW_SIZE - MARGIN), 1)
         
         for r in range(SIZE):
@@ -37,19 +39,22 @@ class Gomoku:
                 if self.board[r][c] != 0:
                     color = BLACK if self.board[r][c] == 1 else WHITE
                     pos = (MARGIN + c * GRID_SIZE, MARGIN + r * GRID_SIZE)
+                    # 绘制棋子，加上 2 像素的间距使画面更精致
                     pygame.draw.circle(self.screen, color, pos, GRID_SIZE // 2 - 2)
 
     def check_win(self, r, c, p):
-        """判断当前落子位置是否达成五连"""
+        """
+        判断在 (r, c) 处落下 p 棋子后，是否产生了五连珠。
+        逻辑：检查横、竖、左斜、右斜四个方向。
+        """
         directions = [(1,0), (0,1), (1,1), (1,-1)]
         for dr, dc in directions:
             count = 1
-            # 正向探测
+            # 分别向该方向的正向和反向探测连续棋子
             for i in range(1, 5):
                 nr, nc = r + dr*i, c + dc*i
                 if 0 <= nr < SIZE and 0 <= nc < SIZE and self.board[nr][nc] == p: count += 1
                 else: break
-            # 反向探测
             for i in range(1, 5):
                 nr, nc = r - dr*i, c - dc*i
                 if 0 <= nr < SIZE and 0 <= nc < SIZE and self.board[nr][nc] == p: count += 1
@@ -57,16 +62,21 @@ class Gomoku:
             if count >= 5: return True
         return False
 
-    # --- 核心算法：启发式评估 ---
+    # --------------------------------------------------
+    # 核心算法部分：启发式评估函数
+    # --------------------------------------------------
     def evaluate_board(self):
-        """对整个棋盘状态进行评分，分值 = AI得分 - 玩家得分 * 惩罚系数"""
+        """
+        对当前局势进行打分。
+        AI 的目标是最大化 (AI得分 - 玩家得分 * 权重)。
+        """
         ai_score = self.get_player_score(2)
         player_score = self.get_player_score(1)
-        # 1.2 的系数是为了让 AI 更加注重防守，防止玩家轻易达成活四
+        # 1.2 的系数是为了让 AI 稍微偏向防守，优先封堵玩家的活三/活四
         return ai_score - player_score * 1.2
 
     def get_player_score(self, p):
-        """计算指定玩家在全盘的棋型总分"""
+        """遍历棋盘，计算特定玩家的总分"""
         score = 0
         for r in range(SIZE):
             for c in range(SIZE):
@@ -75,12 +85,12 @@ class Gomoku:
         return score
 
     def count_score_at(self, r, c, p):
-        """针对单一棋子，评估其在四个方向上的潜力"""
+        """评估单个位置在所有方向上的棋型潜力"""
         total = 0
         directions = [(1,0), (0,1), (1,1), (1,-1)]
         for dr, dc in directions:
             line = []
-            # 获取当前位置前后各 4 格的棋子序列
+            # 获取当前位置前后 4 格构成的 9 格长序列进行模式匹配
             for i in range(-4, 5):
                 nr, nc = r + i*dr, c + i*dc
                 if 0 <= nr < SIZE and 0 <= nc < SIZE:
@@ -89,22 +99,24 @@ class Gomoku:
         return total
 
     def analyze_line(self, line, p):
-        """棋型识别矩阵：根据连续棋子数和空间返回评分"""
+        """棋型识别：为识别出的不同组合分配权重分值"""
         line_str = "".join(map(str, line))
         p_str = str(p)
         
-        # 棋型评分标准（可根据作业需求调整权重）
-        if p_str * 5 in line_str: return 100000        # 五连
-        if "0" + p_str * 4 + "0" in line_str: return 10000  # 活四
-        if "0" + p_str * 3 + "0" in line_str: return 1000   # 活三
-        if p_str * 4 in line_str: return 500          # 冲四/死四
+        # 评分模型：分值差距要拉开，确保 AI 知道五连珠比什么都重要
+        if p_str * 5 in line_str: return 100000        # 五连：必胜
+        if "0" + p_str * 4 + "0" in line_str: return 10000  # 活四：极高分
+        if "0" + p_str * 3 + "0" in line_str: return 1000   # 活三：进攻核心
+        if p_str * 4 in line_str: return 500          # 死四/冲四
         return 0
 
-    # --- 搜索优化：局部搜索范围 ---
+    # --------------------------------------------------
+    # 算法优化：减少搜索广度
+    # --------------------------------------------------
     def get_search_range(self):
         """
-        局部搜索策略：
-        只搜索已有棋子周围 2 格内的空位，大幅减少博弈树的分支因子（从 225 降至约 20-40）。
+        局部化搜索：只在已有棋子周围 2 格的空位内进行搜索。
+        这是性能优化的核心，避免了遍历 15x15 产生的算力浪费。
         """
         potential_moves = set()
         has_chess = False
@@ -117,13 +129,17 @@ class Gomoku:
                             nr, nc = r + dr, c + dc
                             if 0 <= nr < SIZE and 0 <= nc < SIZE and self.board[nr][nc] == 0:
                                 potential_moves.add((nr, nc))
-        # 如果棋盘是空的（开局第一步），返回中心区域
         return list(potential_moves) if has_chess else []
 
-    # --- 核心算法：Alpha-Beta 剪枝 ---
+    # --------------------------------------------------
+    # 核心算法：带剪枝的 Minimax 搜索
+    # --------------------------------------------------
     def alpha_beta(self, depth, alpha, beta, maximizing_player):
-        """递归搜索博弈树"""
-        # 递归终点：达到预设深度
+        """
+        Alpha-Beta 剪枝递归函数
+        alpha: 当前搜索分支能保证的最小得分
+        beta: 对手能保证的最高得分（对当前玩家来说是最坏情况）
+        """
         if depth == 0:
             return self.evaluate_board()
 
@@ -132,40 +148,39 @@ class Gomoku:
 
         if maximizing_player:
             max_eval = -math.inf
-            # 按评分潜力排序可进一步提升剪枝效率，此处简单截取前 15 个点
+            # 为防止分支过多，只选取前 15 个高价值候选点（启发式截断）
             for r, c in search_range[:15]:
-                self.board[r][c] = 2 # 模拟 AI 落子
+                self.board[r][c] = 2
                 eval = self.alpha_beta(depth - 1, alpha, beta, False)
-                self.board[r][c] = 0 # 撤销落子（回溯）
+                self.board[r][c] = 0  # 状态回溯
                 max_eval = max(max_eval, eval)
                 alpha = max(alpha, eval)
-                if beta <= alpha:  # Beta 剪枝
+                if beta <= alpha:  # 发现此分支不会有更好结果，直接剪枝
                     break
             return max_eval
         else:
             min_eval = math.inf
             for r, c in search_range[:15]:
-                self.board[r][c] = 1 # 模拟玩家落子
+                self.board[r][c] = 1
                 eval = self.alpha_beta(depth - 1, alpha, beta, True)
-                self.board[r][c] = 0 # 撤销落子
+                self.board[r][c] = 0
                 min_eval = min(min_eval, eval)
                 beta = min(beta, eval)
-                if beta <= alpha:  # Alpha 剪枝
+                if beta <= alpha:  # 剪枝
                     break
             return min_eval
 
     def ai_move(self):
-        """AI 落子逻辑入口"""
+        """AI 决策主逻辑：选择分值最高的走法"""
         search_range = self.get_search_range()
         if not search_range:
-            # 第一步直接下中心
-            best_move = (SIZE // 2, SIZE // 2)
+            best_move = (SIZE // 2, SIZE // 2)  # 第一步下中心
         else:
             best_score = -math.inf
             best_move = search_range[0]
-            # 遍历当前可落子点，寻找最优解
-            for r, c in search_range[:20]:
+            for r, c in search_range[:20]:  # 第一层可以搜索稍广一点
                 self.board[r][c] = 2
+                # 深度设为 2 可以在秒出结果的情况下提供不错的智商
                 score = self.alpha_beta(2, -math.inf, math.inf, False)
                 self.board[r][c] = 0
                 if score > best_score:
@@ -173,13 +188,12 @@ class Gomoku:
                     best_move = (r, c)
         
         self.board[best_move[0]][best_move[1]] = 2
-        # 落子后检查是否获胜
         if self.check_win(best_move[0], best_move[1], 2):
             self.game_over = True
             self.winner = "AI (White)"
 
     def run(self):
-        """游戏主循环"""
+        """游戏循环引擎"""
         while True:
             self.draw_board()
             pygame.display.flip()
@@ -188,28 +202,28 @@ class Gomoku:
                 if event.type == pygame.QUIT:
                     pygame.quit(); sys.exit()
                 
+                # 监听鼠标点击落子
                 if event.type == pygame.MOUSEBUTTONDOWN and not self.game_over:
-                    # 获取鼠标点击位置并转化为棋盘坐标
                     x, y = event.pos
+                    # 计算逻辑坐标：像素转网格索引
                     c = round((x - MARGIN) / GRID_SIZE)
                     r = round((y - MARGIN) / GRID_SIZE)
                     
                     if 0 <= r < SIZE and 0 <= c < SIZE and self.board[r][c] == 0:
-                        # 玩家落子（黑棋）
                         self.board[r][c] = 1
                         if self.check_win(r, c, 1):
                             self.game_over = True
                             self.winner = "Player (Black)"
                         else:
-                            # 玩家走完，AI 立即走棋
+                            # 玩家落子后，立即触发 AI 计算
                             self.ai_move()
 
             if self.game_over:
                 self.draw_board()
                 pygame.display.flip()
-                print(f"Game Over! Winner: {self.winner}")
-                pygame.time.wait(3000) # 停留3秒显示结果
-                self.__init__()        # 重置游戏
+                print(f"游戏结束！获胜者: {self.winner}")
+                pygame.time.wait(3000) # 停留 3 秒展示获胜场景
+                self.__init__()        # 自动重置开始新对局
 
 if __name__ == "__main__":
     game = Gomoku()
