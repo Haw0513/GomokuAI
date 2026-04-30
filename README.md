@@ -1,47 +1,44 @@
 # GomokuAI
 A Gomoku AI project using Minimax and Alpha-Beta pruning for Data Structures and Algorithms course.
-GomokuAI - 基于 Alpha-Beta 剪枝的五子棋博弈系统
-1. 项目背景
-本项目为 2026 春季学期《数据结构与算法B》课程大作业。五子棋（Gomoku）是一个经典的博弈论问题，本项目旨在通过实现一个具备人工智能水平的五子棋程序，将课堂所学的博弈树搜索、启发式评估以及搜索剪枝等算法知识应用于实际工程中。
+# GomokuAI - 基于 Alpha-Beta 剪枝与模块化设计的五子棋博弈系统
 
-2. 核心算法与知识点应用
-本项目深度应用了以下课程相关的算法与数据结构：
-    博弈树搜索 (Minimax Algorithm)：模拟玩家与 AI 的交替落子过程，构建递归搜索树。
-    Alpha-Beta 剪枝：通过动态维护搜索边界，剪去对结果无影响的分支，大幅提升搜索深度与效率。
-    启发式评估函数 (Heuristic Evaluation)：针对棋盘状态进行量化评分。通过对“活四”、“冲四”、“活三”等关键棋型设定分值权重，辅助 AI 进行决策。
-    二维数组数据结构：高效维护 15x15 的棋盘状态，并实现快速的胜负检测算法。
+## 1. 项目简介
+本项目为课程大作业，实现了一个具备智能对博能力的五子棋人工智能。系统采用模块化设计，将 UI 界面与博弈算法分离，并利用 Alpha-Beta 剪枝算法在 15x15 的标准棋盘上实现了高性能的 AI 决策。
 
-3. 运行指南
-环境要求
-   Python: 3.8 或以上版本
-   Pygame: 2.0+（用于 GUI 交互）
+## 2. 目录结构说明
+GomokuAI/
+├── docs/                # 项目文档（包含开发报告、运行截图）
+├── src/                 # 源代码目录
+│   └── gomoku_game.py   # GUI 界面渲染、游戏控制与 AI 搜索逻辑
+├── tests/               # 单元测试模块
+├── .gitignore           # Git 忽略文件配置
+├── LICENSE              # 项目许可证 (MIT)
+├── README.md            # 项目说明文档
+└── requirements.txt     # 项目依赖库清单
 
-安装与启动
-    克隆仓库：
-        Bash
-        git clone https://github.com/Haw0513/GomokuAI.git
-        cd GomokuAI
-    安装依赖：
-        Bash
-        pip install -r requirements.txt
-    运行程序：
-        Bash
-        python src/main.py
-        
-4. 仓库结构说明
-Plaintext
-├── src/            # 核心源代码
-│   ├── main.py     # 程序入口与 GUI 循环
-│   ├── board.py    # 棋盘数据结构与逻辑判定
-│   └── ai.py       # Alpha-Beta 剪枝与评估算法
-├── docs/           # 项目演示截图及说明文档
-├── requirements.txt # 环境依赖清单
-└── README.md       # 项目主说明文档
+## 3. 核心算法解析
+3.1 博弈决策：Alpha-Beta 剪枝系统核心基于 Minimax (极大极小值) 搜索。通过引入 $\alpha$（AI 保证能得到的最小值）与 $\beta$（对手能保证的最大值）参数，AI 能够剪掉那些对最终决策无影响的分支，大幅提升搜索深度。
+3.2 评分模型：启发式评估AI 通过 src/board.py 中的评分矩阵对局势进行量化：必胜态 (Five): 100,000分极高威胁 (Alive Four): 10,000分进攻潜力 (Alive Three): 1,000分防御权重: 对玩家棋型设置 1.2 倍评分加权，赋予 AI 强烈的防守倾向。
+3.3 性能优化：局部搜索AI 不会盲目扫描全盘，而是仅在已有棋子周围 2 格半径 内搜索空位。这使得单步决策时间控制在 1 秒以内。
 
-5. AI 工具使用声明
+## 4. 运行环境与安装Python
+版本: 3.8+
+核心依赖: Pygame, Numpy
+安装依赖：Bash:pip install -r requirements.txt
+
+## 5. 快速启动
+进入 src 目录运行主程序：
+Bash:python src/gomoku_game.py
+    
+## 6. 功能特性
+标准规则: 15x15 棋盘，先成五子者胜。
+智能交互: 玩家鼠标点击落子，AI 实时计算回应。
+模块化: 算法与界面逻辑解耦，便于后续算法升级（如引入深度学习模型）。
+
+## 7. AI 工具使用声明
 本项目在开发过程中使用了 AI 工具（Gemini）进行辅助：
 AI 辅助部分：项目整体架构的设计规划、README 文档的初稿生成、以及基于 Pygame 的 GUI 基础样板代码。
 独立实现部分：核心博弈算法逻辑（Alpha-Beta 剪枝）、启发式棋型评分函数、以及棋盘胜负判定算法均由本人独立分析并实现。
 
-6. 学术诚信声明
+## 8. 学术诚信声明
 本人郑重声明：本项目除上述声明的 AI 辅助内容及引用的标准库外，核心逻辑与系统架构均为本人自主完成。严禁任何形式的学术造假与抄袭。
