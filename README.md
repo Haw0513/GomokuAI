@@ -9,12 +9,17 @@ A Gomoku AI project using Minimax and Alpha-Beta pruning for Data Structures and
 GomokuAI/
 
 ├── docs/                # 项目文档（包含开发报告、运行截图）
-
+│
 ├── src/                 # 源代码目录
+│
 │   └── gomoku_game.py   # GUI 界面渲染、游戏控制与 AI 搜索逻辑
+│
 ├── .gitignore           # Git 忽略文件配置
+│
 ├── LICENSE              # 项目许可证 (MIT)
+│
 ├── README.md            # 项目说明文档
+│
 └── requirements.txt     # 项目依赖库清单
 
 ## 3. 核心算法解析
